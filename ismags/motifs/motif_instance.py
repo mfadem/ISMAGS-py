@@ -16,8 +16,8 @@
 
 # Software available at https://github.com/sandialabs/ISMAGS
 # (POC) Mark DeBonis (mjdebon@sandia.gov)
+from __future__ import annotations
 
-import copy
 
 class MotifInstance:
     """Represents a motif instance in the graph.
@@ -48,4 +48,4 @@ class MotifInstance:
             A string representation of the motif of the form "1;2;3;4".
         """
         descriptions = [str(node.description) for node in self.mapping]
-        return ';'.join(descriptions)
+        return ";".join(descriptions)

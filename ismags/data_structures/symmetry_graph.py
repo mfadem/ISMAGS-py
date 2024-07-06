@@ -16,15 +16,15 @@
 
 # Software available at https://github.com/sandialabs/ISMAGS
 # (POC) Mark DeBonis (mjdebon@sandia.gov)
+from __future__ import annotations
 
 import copy
 
-from motifs.motif import Motif
+from ismags.motifs.motif import Motif
 
 
 class SymmetryGraph:
-    """Keeps track of the ordered pair partition (OPP) state during the
-       motif analysis.
+    """Keeps track of the ordered pair partition (OPP) state during the motif analysis.
 
     Attributes:
         motif (Motif): Subgraph/Motif being analyzed.
@@ -50,7 +50,6 @@ class SymmetryGraph:
         Keyword Args:
             motif (Motif): Subgraph/Motif being analyzed. Defaults to None.
         """
-
         if motif is None:
             self.motif = Motif()
         else:
@@ -71,8 +70,7 @@ class SymmetryGraph:
         self.color_to_top_motif_node[0] = list1.copy()
 
     def refine_colors(self, color):
-        """Performs a motif refinement, starting with a specific
-            motif partition cell/color that needs refinement
+        """Performs a motif refinement, starting with a specific motif partition cell/color that needs refinement.
 
         Args:
             color (int): Color starting cell for refinement
@@ -83,7 +81,6 @@ class SymmetryGraph:
         ok = self._refine(color)
 
         while ok and len(self.colors_to_recheck) > 0:
-
             # In order to grab the first element with minimal overhead
             # pop and re-add the element as sets can't be directly indexed
             color_to_check = self.colors_to_recheck.pop()
@@ -95,8 +92,7 @@ class SymmetryGraph:
         return ok
 
     def map_node_between_partitions(self, top_id, bottom_id, split_color):
-        """Maps a specific node in the top partition to a node in the bottom
-            partition.
+        """Maps a specific node in the top partition to a node in the bottom partition.
 
         Args:
             top_id (int): Motif node in top partition.
@@ -125,7 +121,7 @@ class SymmetryGraph:
             return new_sym
         return None
 
-    def _refine(self, color):
+    def _refine(self, color) -> bool:  # noqa: PLR0912, PLR0915
         """Performs one step of the refinement procedure.
 
         Args:
@@ -136,8 +132,8 @@ class SymmetryGraph:
         """
         number_of_motif_nodes = self.motif.number_of_motif_nodes
 
-        degrees_top = [list() for _ in range(number_of_motif_nodes)]
-        degrees_bottom = [list() for _ in range(number_of_motif_nodes)]
+        degrees_top = [[] for _ in range(number_of_motif_nodes)]
+        degrees_bottom = [[] for _ in range(number_of_motif_nodes)]
 
         top_nodes = self.color_to_top_motif_node[color]
         bottom_nodes = self.color_to_bottom_motif_node[color]
@@ -175,14 +171,13 @@ class SymmetryGraph:
                 i = links_degrees[j]
                 motif_link = links[j]
 
-                # TODO: In order to stay closer to the Java code we should probably create a __eq__ function for MotifLink()
+                # TODO: In order to stay closer to the Java code we should probably create a __eq__ function for MotifLink()  # noqa: E501
                 if motif_link.link_type.motif_link.motif_link_id == motif_link.motif_link_id:
                     degrees_bottom[i][motif_link.link_type.link_type_id] += 1
                     degrees_bottom[node][number_of_link_types + motif_link.link_type.link_type_id] += 1
                 else:
                     degrees_bottom[node][motif_link.link_type.link_type_id] += 1
                     degrees_bottom[i][number_of_link_types + motif_link.link_type.link_type_id] += 1
-
 
         for integer in reached_colors:
             nodes_in_color = self.color_to_top_motif_node[integer]
@@ -224,7 +219,7 @@ class SymmetryGraph:
                 node_id = nodes_in_bottom_color[i]
                 self._refine_bottom(node_id, degrees_bottom, current_color_mapping)
 
-            for integer1 in self.color_to_top_motif_node.keys():
+            for integer1 in self.color_to_top_motif_node:
                 bottom_set = self.color_to_bottom_motif_node.get(integer1)
                 top_set = self.color_to_top_motif_node.get(integer1)
                 if bottom_set is None or len(top_set) != len(bottom_set):
@@ -252,7 +247,7 @@ class SymmetryGraph:
                 return
         return
 
-    def _compare_rows(self, a, b):
+    def _compare_rows(self, a, b) -> bool:
         """Compare rows of the motif.
 
         Args:
@@ -262,7 +257,4 @@ class SymmetryGraph:
         Returns:
             True if the rows are identical, False otherwise.
         """
-        for i in range(len(b)):
-            if(a[i] != b[i]):
-                return False
-        return True
+        return all(a[i] == b[i] for i in range(len(b)))

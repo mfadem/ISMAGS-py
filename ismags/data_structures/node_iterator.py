@@ -16,9 +16,11 @@
 
 # Software available at https://github.com/sandialabs/ISMAGS
 # (POC) Mark DeBonis (mjdebon@sandia.gov)
+from __future__ import annotations
 
 import sys
 from collections import deque
+
 
 class NodeIterator:
     """Class that Keeps track of all lists that need to be intersected to obtain candidates graph nodes.
@@ -31,22 +33,22 @@ class NodeIterator:
         min_set_size (int): Size of the smallest set of nodes
         neighbor_lists (deque): Stack of nodes that constrained by a given graph node
         node_causing_restriction (deque): Stack of constraining nodes
-        initial_lists (list[list]): List of lists containing the intial nodes that aren't constrained
+        initial_lists (list[list]): List of lists containing the initial nodes that aren't constrained
 
     Methods:
         add_restriction_list(node_list, node=None): Adds a new list of candidate nodes for the
-            motif node during the initialization or if initialization has occured
+            motif node during the initialization or if initialization has occurred
             adds a new list of candidate nodes for the motif node to the set of constraining lists.
         remove_restriction_list(node): Removes the constraining list of candidate
             nodes induced by the graph node
-        get_node_set(): Retrieve the candiate graph nodes.
+        get_node_set(): Retrieve the candidate graph nodes.
         node_index(node_list, target): Perform a binary search to find the given node target.
         intersect(minimum, maximum): Creates a NodeIterator based on the constraint lists.
 
     """
 
     def __init__(self, nodes=None, parent=None, motif_node_id=0):
-        """initialize a NodeIterator with or without an intital set of node candidates.
+        """Initialize a NodeIterator with or without an initial set of node candidates.
 
         Keyword Args:
             nodes (list): Node candidates. Defaults to None.
@@ -64,14 +66,15 @@ class NodeIterator:
             self.motif_node_id = parent.motif_node_id
             self.min_set_size = len(nodes)
 
-        self.neighbor_lists = deque() # Stack
-        self.node_causing_restriction = deque() # Stack
+        self.neighbor_lists = deque()  # Stack
+        self.node_causing_restriction = deque()  # Stack
         self.initial_lists = []
 
     def add_restriction_list(self, node_list, node=None):
-        """Adds a new list of candidate nodes for the motif node during the
-            initialization or if initialization has occured adds a new list of
-            candidate nodes for the motif node to the set of constraining lists.
+        """Adds a new list of candidate nodes for the motif node during the initialization.
+
+        If initialization has occurred adds a new list of candidate nodes for the motif node
+        to the set of constraining lists.
 
         Args:
             node_list (list): List of candidate nodes.
@@ -83,15 +86,14 @@ class NodeIterator:
                 self.min_set_size = len(node_list)
             else:
                 self.initial_lists.append(node_list)
-        else:
-            if node_list not in self.neighbor_lists:
-                self.neighbor_lists.append(node_list)
-                if len(node_list) < self.min_set_size:
-                    self.min_set_size = len(node_list)
-                self.node_causing_restriction.append(node)
+        elif node_list not in self.neighbor_lists:
+            self.neighbor_lists.append(node_list)
+            if len(node_list) < self.min_set_size:
+                self.min_set_size = len(node_list)
+            self.node_causing_restriction.append(node)
 
     def remove_restriction_list(self, node):
-        """Removes the constraining list of candidate nodes induced by the graph node
+        """Removes the constraining list of candidate nodes induced by the graph node.
 
         Args:
             node (Node): Graph node inducing the constraining list
@@ -101,8 +103,8 @@ class NodeIterator:
             self.neighbor_lists.pop()
             self.node_causing_restriction.pop()
 
-    def get_node_set(self):
-        """Retrieve the candiate graph nodes.
+    def get_node_set(self):  # noqa: PLR0912
+        """Retrieve the candidate graph nodes.
 
         Returns:
             The candidate graph nodes. If no set has been calculated
@@ -110,55 +112,55 @@ class NodeIterator:
         """
         if self.nodes is not None:
             return self.nodes
-        else:
-            initial_lists_length = len(self.initial_lists)
-            if initial_lists_length == 1:
-                return self.initial_lists[0]
-            iter_list = []
-            for i in range(initial_lists_length):
-                iter_list.append(iter(self.initial_lists[i]))
 
-            # All of the following exception logic is mimicking the Java label logic
+        initial_lists_length = len(self.initial_lists)
+        if initial_lists_length == 1:
+            return self.initial_lists[0]
+        iter_list = []
+        for i in range(initial_lists_length):
+            iter_list.append(iter(self.initial_lists[i]))
+
+        # All of the following exception logic is mimicking the Java label logic
+        try:
+            node_i = next(iter_list[0])
+        except StopIteration:
+            return []
+        j = 1
+        sim = 1
+        node_set = []
+        while True:
             try:
-                node_i = next(iter_list[0])
-            except StopIteration:
-                return []
-            j = 1
-            sim = 1
-            node_set = []
-            while True:
+                node_j = next(iter_list[j])
                 try:
-                    node_j = next(iter_list[j])
-                    try:
-                        while node_i - node_j > 0:
-                            try:
-                                node_j = next(iter_list[j])
-                                sim = 1
-                            except StopIteration:
-                                raise ValueError
-                    except ValueError:
-                        break
-                    try:
-                        while node_i - node_j < 0:
-                            try:
-                                node_i = next(iter_list[0])
-                                sim = 1
-                            except StopIteration:
-                                raise ValueError
-                    except ValueError:
-                        break
-                    if node_j.id == node_i.id:
-                        sim += 1
-                        if sim == initial_lists_length:
-                            node_set.append(node_j)
+                    while node_i - node_j > 0:
+                        try:
+                            node_j = next(iter_list[j])
                             sim = 1
-                    else:
-                        sim = 1
-                    j = (j % (initial_lists_length - 1)) + 1
-                except StopIteration:
+                        except StopIteration:
+                            raise ValueError  # noqa: B904
+                except ValueError:
                     break
+                try:
+                    while node_i - node_j < 0:
+                        try:
+                            node_i = next(iter_list[0])
+                            sim = 1
+                        except StopIteration:
+                            raise ValueError  # noqa: B904
+                except ValueError:
+                    break
+                if node_j.id == node_i.id:
+                    sim += 1
+                    if sim == initial_lists_length:
+                        node_set.append(node_j)
+                        sim = 1
+                else:
+                    sim = 1
+                j = (j % (initial_lists_length - 1)) + 1
+            except StopIteration:
+                break
 
-            return list({n for nodes in self.initial_lists for n in nodes})
+        return list({n for nodes in self.initial_lists for n in nodes})
 
     def node_index(self, node_list, target):
         """Perform a binary search to find the given node target.
@@ -173,18 +175,19 @@ class NodeIterator:
                 binary search.
         """
         left = 0
-        right = len(node_list)-1
+        right = len(node_list) - 1
         while left <= right:
             middle = left + (right - left) // 2
 
             if node_list[middle].id == target.id:
                 return middle
-            elif target.id > node_list[middle].id:
+
+            if target.id > node_list[middle].id:
                 left = middle + 1
             elif target.id < node_list[middle].id:
                 right = middle - 1
 
-        return -middle-1
+        return -middle - 1
 
     def intersect(self, minimum, maximum):
         """Creates a NodeIterator based on the constraint lists.
@@ -215,18 +218,12 @@ class NodeIterator:
         start_index = 0
         if minimum is not None:
             p = self.node_index(nodes, minimum)
-            if p >= 0:
-                start_index = p + 1
-            else:
-                start_index = -p - 1
+            start_index = p + 1 if p >= 0 else -p - 1
 
         end_index = len(nodes)
         if maximum is not None:
             p = self.node_index(nodes, maximum)
-            if p >= 0:
-                end_index = p
-            else:
-                end_index = -p - 1
+            end_index = p if p >= 0 else -p - 1
 
         # All of the following exception logic is mimicking the Java label logic
         for node in nodes[start_index:end_index]:
@@ -235,7 +232,7 @@ class NodeIterator:
             try:
                 for i in range(len(self.neighbor_lists)):
                     if i != smallest_set and node not in self.neighbor_lists[i]:
-                        raise ValueError
+                        raise ValueError  # noqa: TRY301
             except ValueError:
                 continue
             result.append(node)

@@ -16,32 +16,33 @@
 
 # Software available at https://github.com/sandialabs/ISMAGS
 # (POC) Mark DeBonis (mjdebon@sandia.gov)
+from __future__ import annotations
 
 import argparse
 import logging
 import os
 import sys
-sys.path.insert(1, '../')
+
+sys.path.insert(1, "../")
 import textwrap
-from time import perf_counter
-from algorithm.motif_finder import MotifFinder
-from motifs.motif import create_motif, write_motifs
-from network.link import LinkType
-from network.network import read_network_from_files
+
+from ismags.algorithm.motif_finder import MotifFinder
+from ismags.motifs.motif import create_motif, write_motifs
+from ismags.network.link import LinkType
+from ismags.network.network import read_network_from_files
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 
-class CLI():
-    """Creates a new CLI instance that will read in and parse command line arguments
-        for generating networks and motifs.
+class CLI:
+    """Creates a new CLI instance that will read in and parse command line arguments for generating networks and motifs.
 
     Attributes:
         folder (str): String containing the path where the input files(s) are located.
-        link_types (str): String containing comma seperated link types.
+        link_types (str): String containing comma separated link types.
             Note: The first link type will also correspond to the first network file.
-        networks (str): String containing comma seperated network file names.
+        networks (str): String containing comma separated network file names.
             Note: The first link type will also correspond to the first network file.
         motif_description (str): String containing the description of the motif in the network.
         output (str): String containing the path to desired output file.
@@ -53,27 +54,42 @@ class CLI():
     """
 
     def __init__(self):
-        """Initialize a new CLI instance and parse the command line arguments.
-        """
-        parser_desciption = textwrap.dedent('''\
+        """Initialize a new CLI instance and parse the command line arguments."""
+        parser_description = textwrap.dedent("""\
                             The Index-based Subgraph Matching Algorithm with General Symmetries
                             -------------------------------------------------------------------
                             Original Copyright: Copyright (c) 2013-2014 Maarten Houbraken
-                            Sandia Copyright: Copyright (c) 2023 National Technology & Engineering Solutions of Sandia, LLC (NTESS)''')
-        parser = argparse.ArgumentParser(description=parser_desciption, formatter_class=argparse.RawTextHelpFormatter)
-        parser.add_argument("-f", "--folder", dest="folder", help="Folder path containing network files", default=os.getcwd())
-        required = parser.add_argument_group('required arguments')
-        required.add_argument("-l", "--link-types", dest="link_types", help="Link types seperated by commas e.g. \"A u P P\" or \"A u P P,A d P P\"", required=True)
-        required.add_argument("-n", "--networks", dest="networks", help="Network files seperated by commas e.g. file1.txt or file1.txt,file2.txt", required=True)
-        required.add_argument("-m", "--motif", dest="motif_description", help="Motif description e.g. AA0A00", required=True)
+                            Sandia Copyright: Copyright (c) 2023 National Technology & Engineering Solutions of Sandia, LLC (NTESS)""")  # noqa: E501
+        parser = argparse.ArgumentParser(description=parser_description, formatter_class=argparse.RawTextHelpFormatter)
+        parser.add_argument(
+            "-f", "--folder", dest="folder", help="Folder path containing network files", default=os.getcwd()
+        )
+        required = parser.add_argument_group("required arguments")
+        required.add_argument(
+            "-l",
+            "--link-types",
+            dest="link_types",
+            help='Link types separated by commas e.g. "A u P P" or "A u P P,A d P P"',
+            required=True,
+        )
+        required.add_argument(
+            "-n",
+            "--networks",
+            dest="networks",
+            help="Network files separated by commas e.g. file1.txt or file1.txt,file2.txt",
+            required=True,
+        )
+        required.add_argument(
+            "-m", "--motif", dest="motif_description", help="Motif description e.g. AA0A00", required=True
+        )
         required.add_argument("-o", "--output", dest="output", help="Output file name", required=True)
         args = parser.parse_args()
 
         # Grab all of the CLI args and do some light preprocessing
         self.folder = args.folder
-        self.link_types = args.link_types.split(',')
+        self.link_types = args.link_types.split(",")
         self.link_types = [x.strip() for x in self.link_types]
-        self.networks = args.networks.split(',')
+        self.networks = args.networks.split(",")
         if self.folder is not None:
             if self.folder[-1] != os.path.sep:
                 self.folder = self.folder + os.path.sep
@@ -86,37 +102,42 @@ class CLI():
         # Walk through the link_types and networks and generate the corresponding internal structures
         link_types_list = []
         link_type_translation = {}
-        logger.info('Creating link types...')
+        logger.info("Creating link types...")
         for i, link_type in enumerate(self.link_types):
-            link_type_char_list = link_type.split(' ')
-            if len(link_type_char_list) < 4 or len(link_type_char_list) > 4:
-                logger.error(f'link type `{link_type}` doesn\'t meet specification, ignoring given link type.')
+            link_type_char_list = link_type.split(" ")
+            if len(link_type_char_list) < 4 or len(link_type_char_list) > 4:  # noqa: PLR2004
+                logger.error("link type `%s` doesn't meet specification, ignoring given link type.", link_type)
                 if len(self.link_types) == 1:
-                    raise ValueError('No valid link types to process, exiting.')
-                else:
-                    continue
-            directed = link_type_char_list[1] == 'd'
+                    raise ValueError("No valid link types to process, exiting.")
+                continue
+            directed = link_type_char_list[1] == "d"
             if link_type_char_list[0] not in link_type_translation:
-                t = LinkType(directed=directed, link_type_id=i, source_network=link_type_char_list[2], destination_network=link_type_char_list[3])
+                t = LinkType(
+                    directed=directed,
+                    link_type_id=i,
+                    source_network=link_type_char_list[2],
+                    destination_network=link_type_char_list[3],
+                )
             else:
                 t = link_type_translation[link_type_char_list[0]]
             link_types_list.append(t)
             link_type_translation[link_type_char_list[0]] = t
 
-        logger.info('Reading in networks...')
+        logger.info("Reading in networks...")
         self.network = read_network_from_files(self.networks, link_types_list)
 
-        logger.info('Creating motif data structure...')
+        logger.info("Creating motif data structure...")
         self.motif = create_motif(self.motif_description, link_type_translation)
 
+
 def main():
-    """Simple main to run CLI parsing and the ISMAGS algorithm.
-    """
+    """Simple main to run CLI parsing and the ISMAGS algorithm."""
     cli = CLI()
 
     motif_finder = MotifFinder(cli.network)
     motifs = motif_finder.find_motif(cli.motif, False)
     write_motifs(motifs, cli.output)
+
 
 if __name__ == "__main__":
     main()

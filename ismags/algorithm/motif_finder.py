@@ -22,40 +22,39 @@ import logging
 import sys
 import time
 
-from algorithm.symmetry_handler import SymmetryHandler
-from data_structures.node_iterator import NodeIterator
-from motifs.motif_instance import MotifInstance
-from motifs.motif_link import MotifLink
-from network.network import Network
+from ismags.algorithm.symmetry_handler import SymmetryHandler
+from ismags.data_structures.node_iterator import NodeIterator
+from ismags.motifs.motif_instance import MotifInstance
+from ismags.motifs.motif_link import MotifLink
+from ismags.network.network import Network
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 
 class MotifFinder:
-    """Creates a new MotifFinder. This class is responsible
-        for finding all motif instances.
+    """Creates a new MotifFinder. This class is responsible for finding all motif instances.
 
     Attributes:
         network (Network): Network to be searched.
         symmetry_handler (SymmetryHandler): Symmetry handler to use when finding the motif.
         unmapped_nodes (set(int)): Nodes that need to be mapped to motif.
         used_links (set(set(Node))): Set of links that have been used while finding the motif.
-        cancelled (bool): Flag to terminate parallel proccessing. **Unused Currently**.
+        cancelled (bool): Flag to terminate parallel processing. **Unused Currently**.
 
     Methods:
         find_motif(motif, save_links): Finds and returns all instances of specified motif in the network.
 
     """
 
-    def __init__(self, network=Network()):
+    def __init__(self, network=None):
         """Initialize a MotifFinder object to find all motifs in a network.
 
         Keywords Args:
             network (Network): Network to be searched.
         """
         logger.info("Initializing ISMAGS MotifFinder...")
-        self.network = network
+        self.network = Network() if network is None else network
         self.symmetry_handler = None  # No need to init symmetry_handler ahead of time
         self.unmapped_nodes = set()
         self.used_links = set()  # set(set(Node))
@@ -127,11 +126,11 @@ class MotifFinder:
             self.used_links = set()
 
         self._map_next(motif, instances, best_motif_node, mapped_nodes, save_links, number_of_mapped=0)
-        logger.info(f"Completed motif search in {time.perf_counter()-timer:.6f} seconds")
-        logger.info(f"Found {len(instances)} instances of {motif.description} motif")
+        logger.info("Completed motif search in %s:.6f seconds", time.perf_counter() - timer)
+        logger.info("Found %s instances of %s motif", len(instances), motif.description)
         return instances
 
-    def _map_next(self, motif, instances, motif_node, mapped_nodes, save_links, number_of_mapped=0):
+    def _map_next(self, motif, instances, motif_node, mapped_nodes, save_links, number_of_mapped=0):  # noqa: PLR0913, PLR0912
         """Recursively called to map graph nodes to the next motif node.
 
         Args:
@@ -150,13 +149,13 @@ class MotifFinder:
         if number_of_mapped == motif.number_of_motif_nodes - 1:
             if save_links and len(nodes) > 0:
                 for i in range(motif.number_of_motif_nodes):
-                    if mapped_nodes[i] == None:
+                    if mapped_nodes[i] is None:
                         continue
                     links = motif.final_connections[i]
                     for j in range(len(links)):
-                        if mapped_nodes[links[j]] == None:
+                        if mapped_nodes[links[j]] is None:
                             continue
-                        elif links[j] > i:
+                        if links[j] > i:
                             break
                         link = set()
                         link.add(mapped_nodes[i])

@@ -16,15 +16,17 @@
 
 # Software available at https://github.com/sandialabs/ISMAGS
 # (POC) Mark DeBonis (mjdebon@sandia.gov)
+from __future__ import annotations
 
 import logging
 from functools import cmp_to_key
 
-from network.link import Link
-from network.node import Node
+from ismags.network.link import Link
+from ismags.network.node import Node
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
+
 
 class Network:
     """Network of nodes and their associated links.
@@ -46,13 +48,10 @@ class Network:
         finalize_network_construction(): Optimize network structure for further processing.
         read_network_from_files(filenames, link_types): Read in network structures from file(s).
 
-    """
+    """  # noqa: E501
 
     def __init__(self):
-
-        """Initializes a network of nodes and their associated links.
-        """
-
+        """Initializes a network of nodes and their associated links."""
         self.nodes_by_id = {}
         self.nodes_by_description = {}
         self.node_sets_departing_from_link = {}
@@ -63,14 +62,14 @@ class Network:
     def number_of_nodes(self):
         return len(self.nodes_by_id)
 
-    def get_node_by_id(self, id):
+    def get_node_by_id(self, id):  # noqa: A002
         """Retrieve all nodes from network with a specific ID.
 
-            TODO (mjfadem): Provided that all nodes in a network are suppose to be
-                unique then this will always return a single node which seems to
-                disagree with the original comments. Investigate further and consider
-                removing this function if it would be easier/simpler to directly access
-                nodes_by_id.
+        TODO (mjfadem): Provided that all nodes in a network are suppose to be
+            unique then this will always return a single node which seems to
+            disagree with the original comments. Investigate further and consider
+            removing this function if it would be easier/simpler to directly access
+            nodes_by_id.
 
         Args:
             id (int): Node ID to find in network. Defaults to None.
@@ -92,8 +91,8 @@ class Network:
         """
         if description:
             return self.nodes_by_description[description]
-        else:
-            return self.nodes_by_description
+
+        return self.nodes_by_description
 
     def _get_set_of_type(self, set_type):
         """Retrieve a set of nodes that are departing from a link within the network with a specific set type.
@@ -108,7 +107,7 @@ class Network:
         if set_type in self.node_sets_departing_from_link:
             node_set = self.node_sets_departing_from_link[set_type]
         else:
-            node_set = set(())
+            node_set = set()
             self.node_sets_departing_from_link[set_type] = node_set
         return node_set
 
@@ -125,8 +124,8 @@ class Network:
         node_list = self.nodes_with_link[node_type]
         if node_list:
             return node_list
-        else:
-            return []
+
+        return []
 
     def add_node(self, node):
         """Add node to the network.
@@ -156,31 +155,30 @@ class Network:
         else:
             set_of_link.add(link.end)
 
-        if type_id < len(link.start.neighbours_per_type):
-            node_list = link.start.neighbours_per_type[type_id]
+        if type_id < len(link.start.neighbors_per_type):
+            node_list = link.start.neighbors_per_type[type_id]
         else:
             node_list = []
-            link.start.neighbours_per_type[type_id] = node_list
+            link.start.neighbors_per_type[type_id] = node_list
 
         if link.end not in node_list:
-            link.start.neighbours_per_type[type_id].append(link.end)
+            link.start.neighbors_per_type[type_id].append(link.end)
 
         # Add the link for the end node
         if link.type.directed:
             type_id = link.type.inverse_motif_link.motif_link_id
 
-        if type_id < len(link.end.neighbours_per_type):
-            node_list = link.end.neighbours_per_type[type_id]
+        if type_id < len(link.end.neighbors_per_type):
+            node_list = link.end.neighbors_per_type[type_id]
         else:
             node_list = []
-            link.end.neighbours_per_type[type_id] = node_list
+            link.end.neighbors_per_type[type_id] = node_list
 
         if link.start not in node_list:
-            link.end.neighbours_per_type[type_id].append(link.start)
+            link.end.neighbors_per_type[type_id].append(link.start)
 
     def finalize_network_construction(self):
-        """Optimize network structure for further processing.
-        """
+        """Optimize network structure for further processing."""
         key_set = self.node_sets_departing_from_link.keys()
         for motif_link in key_set:
             nodes = list(self.node_sets_departing_from_link[motif_link])
@@ -189,11 +187,13 @@ class Network:
             self.nodes_with_link[motif_link] = sorted(nodes, key=cmp_to_key(node_id_compare))
         self.node_sets_departing_from_link = None
 
+
 def node_id_compare(n1, n2):
     return n1.id - n2.id
 
+
 def read_network_from_files(filenames, link_types):
-    """Read in network structures from file(s).
+    r"""Read in network structures from file(s).
 
     Example:
         A tab seperated text file containing with each file of the file being of
@@ -216,14 +216,14 @@ def read_network_from_files(filenames, link_types):
     for i, filename in enumerate(filenames):
         link_type = link_types[i]
         links = 0
-        with open(filename, 'r') as f:
+        with open(filename) as f:
             lines = f.readlines()
             for line in lines:
-                tab = line.index('\t')
-                if tab <= 0 or '#' in line:
+                tab = line.index("\t")
+                if tab <= 0 or "#" in line:
                     continue
-                node_1 = line.strip('\n').split('\t')[0] + link_type.source_network
-                node_2 = line.strip('\n').split('\t')[1] + link_type.destination_network
+                node_1 = line.strip("\n").split("\t")[0] + link_type.source_network
+                node_2 = line.strip("\n").split("\t")[1] + link_type.destination_network
 
                 if node_1 == node_2:
                     continue
@@ -240,7 +240,7 @@ def read_network_from_files(filenames, link_types):
                     destination = Node(description=node_2)
                     network.add_node(destination)
 
-                nodes = origin.neighbours_per_type[link_type.motif_link.motif_link_id]
+                nodes = origin.neighbors_per_type[link_type.motif_link.motif_link_id]
                 if nodes is not None and destination in nodes:
                     continue
 
@@ -250,17 +250,17 @@ def read_network_from_files(filenames, link_types):
                 network.add_link(link)
 
         for node in network.nodes_by_description.values():
-            for node_set in range(len(node.neighbours_per_type)):
-                if node.neighbours_per_type[node_set] is not None:
+            for node_set in range(len(node.neighbors_per_type)):
+                if node.neighbors_per_type[node_set] is not None:
                     # This _should_ be equivalent to the overloaded `CompareTo()` in the Java
                     # Node class when sorting
-                    node.neighbours_per_type[node_set].sort(key=cmp_to_key(node_id_compare))
+                    node.neighbors_per_type[node_set].sort(key=cmp_to_key(node_id_compare))
 
-        logger.info(f"Read: {filename} | Links: {links}")
+        logger.info("Read: %s | Links: %s", filename, links)
 
     network.finalize_network_construction()
 
-    logger.info(f"Number of Nodes: {len(network.nodes_by_description)}")
-    logger.info(f"Number of Links: {network.number_of_links}")
+    logger.info("Number of Nodes: %s", len(network.nodes_by_description))
+    logger.info("Number of Links: %s", network.number_of_links)
 
     return network

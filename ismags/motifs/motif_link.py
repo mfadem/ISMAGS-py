@@ -16,6 +16,8 @@
 
 # Software available at https://github.com/sandialabs/ISMAGS
 # (POC) Mark DeBonis (mjdebon@sandia.gov)
+from __future__ import annotations
+
 
 class MotifLink:
     """Represents a motif link with all related attributes.
@@ -31,9 +33,8 @@ class MotifLink:
 
     NUMBER_OF_LINK_IDS = 0
 
-    def __init__(self, link_type=None,
-                        directed=False):
-        """Initialize a link within a motif
+    def __init__(self, link_type=None, directed=False):
+        """Initialize a link within a motif.
 
         Keyword Args:
             link_type (LinkType): Type of link for the given motif. Defaults to None.
@@ -44,4 +45,3 @@ class MotifLink:
         self.motif_link_id = MotifLink.NUMBER_OF_LINK_IDS
         MotifLink.NUMBER_OF_LINK_IDS += 1
         self.link_id_to_motif_link = {self.motif_link_id: self}
-
