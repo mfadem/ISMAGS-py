@@ -22,22 +22,20 @@ import copy
 import math
 import sys
 
-from data_structures.priority_queue import PriorityObject, PriorityQueueMap
-from data_structures.symmetry_graph import SymmetryGraph
-from data_structures.symmetry_properties import SymmetryProperties
-from motifs.motif import Motif
+from ismags.data_structures.priority_queue import PriorityObject, PriorityQueueMap
+from ismags.data_structures.symmetry_graph import SymmetryGraph
+from ismags.data_structures.symmetry_properties import SymmetryProperties
+from ismags.motifs.motif import Motif
 
 
 class SymmetryHandler:
-    """Creates a new SymmetryHandler. This class is responsible
-        for analysing the motif and providing the constraints
-        to the MotifFinder class.
+    """This class is responsible for analyzing the motif and providing the constraints to the MotifFinder class.
 
     Attributes:
         mapping (list[NodeIterator]): Handle to NodeIterators containing constraining neighbor lists.
         mapped_nodes (list[Node]): Handle to partial node mapping.
-        motif (Motif): Motif to be analysed.
-        priority_queue_map (PriorityQueueMap): Priotity queue mapping of the motif nodes.
+        motif (Motif): Motif to be analyse.
+        priority_queue_map (PriorityQueueMap): Priority queue mapping of the motif nodes.
         mapped_positions (set(int)): Mapped positions of motif nodes.
         smaller (dict): Dictionary of smaller motif nodes for a given motif node ID.
         larger (dict): Dictionary of larger motif nodes for a given motif node ID.
@@ -46,13 +44,14 @@ class SymmetryHandler:
 
     Methods:
         get_next_best_iterator(unmapped_motif_nodes): Determines the next motif nodes and candidates to be mapped.
-        map_node(motif_node, graph_node): Maps a graph node to a motif node and updates the neighbor lists used for intersecting.
+        map_node(motif_node, graph_node): Maps a graph node to a motif node and updates the neighbor lists used
+            for intersecting.
         remove_node_mapping(motif_node, graph_node): Un-maps a graph node previously mapped to a motif node, ensuring
-            consistency in constraining neighbour lists.
+            consistency in constraining neighbor lists.
 
     """
 
-    def __init__(self, mapping=None, motif=Motif(), mapped_nodes=None):
+    def __init__(self, mapping=None, motif=None, mapped_nodes=None):
         """Initialize a SymmetryHandler object to deal with the specified motif.
 
         Keywords Args:
@@ -70,11 +69,11 @@ class SymmetryHandler:
         else:
             self.mapped_nodes = mapped_nodes
 
-        self.motif = motif
+        self.motif = Motif() if motif is None else motif
         self.priority_queue_map = PriorityQueueMap(len(self.mapping))
         self.mapped_positions = set()
-        self.smaller = dict()
-        self.larger = dict()
+        self.smaller = {}
+        self.larger = {}
         self.number_of_orbits = 0
 
         self.symmetric_properties = self._analyze_motif(motif)
@@ -93,10 +92,7 @@ class SymmetryHandler:
         node_iterator = self.mapping[motif_node_id]
 
         # Determine lower bound for graph node candidates
-        if motif_node_id in self.larger:
-            min_set = self.larger[motif_node_id]
-        else:
-            min_set = None
+        min_set = self.larger.get(motif_node_id, None)
         min_node = None
         min_value = -math.inf
 
@@ -107,10 +103,7 @@ class SymmetryHandler:
                     min_node = self.mapped_nodes[integer]
 
         # Determine upper bound for graph node candidates
-        if motif_node_id in self.larger:
-            max_set = self.smaller[motif_node_id]
-        else:
-            max_set = None
+        max_set = self.smaller[motif_node_id] if motif_node_id in self.larger else None
 
         max_node = None
         max_value = sys.maxsize
@@ -127,7 +120,7 @@ class SymmetryHandler:
         # Determine nodes by intersecting using the bounds
         return node_iterator.intersect(min_node, max_node)
 
-    def map_node(self, motif_node, graph_node):
+    def map_node(self, motif_node, graph_node) -> bool:
         """Maps a graph node to a motif node and updates the neighbor lists used for intersecting.
 
         Args:
@@ -148,21 +141,19 @@ class SymmetryHandler:
             links = graph_node.neighbours_per_type[motif_link.motif_link_id]
             if links is None:
                 return False
-            else:
-                self.mapping[connection].add_restriction_list(links, node=graph_node)
-                self.priority_queue_map.add(
-                    PriorityObject(
-                        start_node=graph_node,
-                        from_position=motif_node,
-                        to_position=connection,
-                        num_neighbors=len(links),
-                    )
+            self.mapping[connection].add_restriction_list(links, node=graph_node)
+            self.priority_queue_map.add(
+                PriorityObject(
+                    start_node=graph_node,
+                    from_position=motif_node,
+                    to_position=connection,
+                    num_neighbors=len(links),
                 )
+            )
         return True
 
     def remove_node_mapping(self, motif_node, graph_node):
-        """Un-maps a graph node previously mapped to a motif node, ensuring
-            consistency in constraining neighbour lists.
+        """Un-maps a graph node previously mapped to a motif node, ensuring consistency in constraining neighbor lists.
 
         Args:
             motif_node (int): Motif node mapped to.
@@ -174,8 +165,7 @@ class SymmetryHandler:
             self.priority_queue_map.remove_motif_node(motif_node, i)
 
     def _merge_orbits(self, a, b, orbits):
-        """Updates the orbit partitioning by merging the orbit partition
-            cells of the specified motif nodes.
+        """Updates the orbit partitioning by merging the orbit partition cells of the specified motif nodes.
 
         Args:
             a (int): First cell to be merged.
@@ -214,11 +204,12 @@ class SymmetryHandler:
         self._map_nodes(symmetric_properties, orbits, symmetry_graph)
         return symmetric_properties
 
-    def _map_nodes(self, symmetric_properties, orbits, symmetry_graph, main=True):
+    def _map_nodes(self, symmetric_properties, orbits, symmetry_graph, main=True):  # noqa: PLR0915, PLR0912
         """Recursive motif analysis.
 
         Args:
-            symmetric_properties (SymmetryProperties): Stores all permutations and symmetry-breaking constraints for the motif.
+            symmetric_properties (SymmetryProperties): Stores all permutations and
+                symmetry-breaking constraints for the motif.
             orbits (list(int)): Orbit partitioning of the motif nodes.
             symmetry_graph (SymmetryGraph): Current state in motif analysis.
 
@@ -229,7 +220,7 @@ class SymmetryHandler:
         split_color = -1
         lowest_unassigned_motif_node = sys.maxsize
 
-        # Determing the next motif node to map
+        # Determine the next motif node to map
         for i in range(len(symmetry_graph.color_to_top_motif_node)):
             list_i = symmetry_graph.color_to_top_motif_node[i]
             size_i = len(list_i)
@@ -240,7 +231,7 @@ class SymmetryHandler:
                         if motif_node_id < lowest_unassigned_motif_node:
                             split_color = i
                             lowest_unassigned_motif_node = motif_node_id
-                            raise ValueError
+                            raise ValueError  # noqa: TRY301
                 except ValueError:
                     continue
 
@@ -276,7 +267,8 @@ class SymmetryHandler:
                 if bottom_node != top_node:
                     self._merge_orbits(bottom_node, top_node, orbits)
 
-            # TODO (mjfadem): The original Java code for this loop makes no sense, seems like it could easily infinitely loop
+            # TODO (mjfadem): The original Java code for this loop makes no sense, seems like it
+            # could easily infinitely loop
             for j in range(len(new_symmetry_graph.color_to_bottom_motif_node)):
                 bottom_nodes = new_symmetry_graph.color_to_bottom_motif_node[j]
                 top_nodes = new_symmetry_graph.color_to_top_motif_node[j]
@@ -285,12 +277,11 @@ class SymmetryHandler:
                     top_node = top_nodes[0]
                     new_symmetry_graph = new_symmetry_graph.map_node_between_partitions(top_node, bottom_node, j)
                     if len(new_symmetry_graph.color_to_bottom_motif_node) != symmetry_graph.motif.number_of_motif_nodes:
-                        j = -1  # TODO (mjfadem): This is all kinds of wrong from a logic standpoint
+                        j = -1  # noqa: PLW2901 | TODO (mjfadem): This is all kinds of wrong from a logic standpoint
                         continue
-                    else:
-                        break
+                    break
 
-            for j in range(len(new_symmetry_graph.color_to_bottom_motif_node)):
+            for _ in range(len(new_symmetry_graph.color_to_bottom_motif_node)):
                 bottom_nodes = new_symmetry_graph.color_to_bottom_motif_node[k]
                 top_nodes = new_symmetry_graph.color_to_top_motif_node[k]
                 bottom_node = bottom_nodes[0]

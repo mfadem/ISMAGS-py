@@ -16,6 +16,8 @@
 
 # Software available at https://github.com/sandialabs/ISMAGS
 # (POC) Mark DeBonis (mjdebon@sandia.gov)
+from __future__ import annotations
+
 
 class SymmetryProperties:
     """Groups all information on the symmetric properties of the motif.
@@ -36,6 +38,7 @@ class SymmetryProperties:
     TODO: Determine if number_of_nodes is needed. Doesn't SEEM to be used.
 
     """
+
     def __init__(self, number_of_nodes=0, smaller=None, larger=None, permutations=None):
         """Initialize symmetric properties of the motif.
 
@@ -48,12 +51,12 @@ class SymmetryProperties:
         self.number_of_nodes = number_of_nodes
 
         if smaller is None:
-            self.smaller = dict()
+            self.smaller = {}
         else:
             self.smaller = smaller
 
         if larger is None:
-            self.larger = dict()
+            self.larger = {}
         else:
             self.larger = larger
 
@@ -71,8 +74,7 @@ class SymmetryProperties:
         self.permutations.append(permutation)
 
     def fix(self, motif_node_id, orbits):
-        """ Extracts symmetry-breaking constraints from the orbit
-            of the specified motif node.
+        """Extracts symmetry-breaking constraints from the orbit of the specified motif node.
 
         Args:
             motif_node_id(int): Motif node to generate constraints for.
@@ -82,13 +84,14 @@ class SymmetryProperties:
             return
 
         orbit = orbits[motif_node_id]
-        for i in range(motif_node_id+1, len(orbits)):
+        for i in range(motif_node_id + 1, len(orbits)):
             if orbit == orbits[i]:
                 self.add_constraint(motif_node_id, i)
 
     def add_constraint(self, lower_id, higher_id):
-        """Adds a constraint of the form lowerID higherID to the symmetric
-            properties. Constraints are transitively propagated.
+        """Adds a constraint of the form lowerID higherID to the symmetric properties.
+
+        Constraints are transitively propagated.
 
         Args:
             lower_id(int): ID of the lower motif node.

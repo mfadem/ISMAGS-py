@@ -16,8 +16,10 @@
 
 # Software available at https://github.com/sandialabs/ISMAGS
 # (POC) Mark DeBonis (mjdebon@sandia.gov)
+from __future__ import annotations
 
-from motifs.motif_link import MotifLink
+from ismags.motifs.motif_link import MotifLink
+
 
 class LinkType:
     """Class representing the the type of link in the graph.
@@ -35,10 +37,7 @@ class LinkType:
 
     LINK_TYPES = {}
 
-    def __init__(self, directed=False,
-                        link_type_id=0,
-                        source_network="",
-                        destination_network=""):
+    def __init__(self, directed=False, link_type_id=0, source_network="", destination_network=""):
         """Initializes a graph edge's (link's) attributes/type.
 
         Keyword Args:
@@ -47,7 +46,6 @@ class LinkType:
             source_network (str): Source network description. Defaults to "".
             destination_network (str): Destination network description. Defaults to "".
         """
-
         self.directed = directed
         self.link_type_id = link_type_id
         self.source_network = source_network
@@ -67,8 +65,9 @@ class LinkType:
     def __len__(self):
         return len(LinkType.LINK_TYPES)
 
+
 class Link:
-    """Class representsing graph edge between two nodes.
+    """Class representing graph edge between two nodes.
 
     Attributes:
         id (int): ID of the given graph edge link.
@@ -81,7 +80,7 @@ class Link:
 
     NEXT_AVAILABLE_ID = -1
 
-    def __init__(self, start, end, type):
+    def __init__(self, start, end, type):  # noqa: A002
         """Initializes a graph edge (link) between two nodes.
 
         Keyword Args:

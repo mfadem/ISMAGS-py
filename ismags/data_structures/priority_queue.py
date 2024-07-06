@@ -16,9 +16,11 @@
 
 # Software available at https://github.com/sandialabs/ISMAGS
 # (POC) Mark DeBonis (mjdebon@sandia.gov)
+from __future__ import annotations
 
 import heapq
 import sys
+
 
 class PriorityObject:
     """Base object used in our priority queues.
@@ -27,7 +29,7 @@ class PriorityObject:
     own place in the queue.
 
     Attributes:
-        start_node(Node): The node asociated with this object
+        start_node(Node): The node associated with this object
         from_position(int): motif/network position identification
                             based on the position the node is transitioned from
         to_position(int): motif/network position identification
@@ -35,7 +37,7 @@ class PriorityObject:
         num_neighbors(int): number of neighbors to this neighbor
 
     Args:
-        start_node(Node): The node asociated with this object
+        start_node(Node): The node associated with this object
         from_position(int): motif/network position identification
                             based on the position the node is transitioned from
         to_position(int): motif/network position identification
@@ -43,6 +45,7 @@ class PriorityObject:
         num_neighbors(int): number of neighbors to this neighbor
 
     """
+
     def __init__(self, start_node, from_position, to_position, num_neighbors):
         self.start_node = start_node
         self.from_position = from_position
@@ -50,35 +53,43 @@ class PriorityObject:
         self.num_neighbors = num_neighbors
 
     def __repr__(self):
-        repr = "<" + str(self.start_node) + "," + \
-                str(self.from_position) + "," + \
-                str(self.to_position) + "," + \
-                str(self.num_neighbors) + ">"
-        return repr
+        return (
+            "<"
+            + str(self.start_node)
+            + ","
+            + str(self.from_position)
+            + ","
+            + str(self.to_position)
+            + ","
+            + str(self.num_neighbors)
+            + ">"
+        )
 
     def __str__(self):
         return repr(self)
 
     def __eq__(self, other):
         if isinstance(self, other.__class__):
-            return self.start_node == other.start_node and\
-                self.from_position == other.from_position and\
-                self.to_position == other.to_position and\
-                self.num_neighbors == other.num_neighbors
+            return (
+                self.start_node == other.start_node
+                and self.from_position == other.from_position
+                and self.to_position == other.to_position
+                and self.num_neighbors == other.num_neighbors
+            )
         return False
 
     def __lt__(self, other):
         return self.num_neighbors < other.num_neighbors
 
-class PriorityQueue:
-    """Priority Queue Wrapper
 
-    This wraps priority queue functionality.
-    Mostly implemented in heapq. The removal of items
-    and reheapify-ing might be a little inefficient.
+class PriorityQueue:
+    """Priority Queue Wrapper.
+
+    This wraps priority queue functionality. Mostly implemented in heapq.
+    The removal of items and reheapify-ing might be a little inefficient.
 
     Attributes:
-        pq(list): The priority queue. Sorted to a priorirty queue with heapq
+        pq(list): The priority queue. Sorted to a priority queue with heapq
         motif_map(dictionary(int, Node)): Map of elements used for arbitrary
                         deletion based on motif.
 
@@ -86,6 +97,7 @@ class PriorityQueue:
         won't use it this way but may be best to be sure and safe.
 
     """
+
     def __init__(self, pq=None, motif_map=None):
         if pq is None:
             self.pq = []
@@ -109,19 +121,19 @@ class PriorityQueue:
             return self.pq[0]
         return None
 
-    def remove_object(self, priority_obj):
+    def remove(self, priority_obj):
         obj_index = self.pq.index(priority_obj)
         self.pq.pop(obj_index)
         heapq.heapify(self.pq)
 
     def remove_motif_node(self, motif_node):
         if motif_node in self.motif_map:
-            object = self.motif_map.pop(motif_node)
-            self.remove_object(object)
+            node_to_remove = self.motif_map.pop(motif_node)
+            self.remove(node_to_remove)
 
 
 class PriorityQueueMap:
-    """List of priority queues
+    """List of priority queues.
 
     Maps priority queues according to indices.
 
@@ -148,25 +160,20 @@ class PriorityQueueMap:
         index_iter = iter(indices)
         min_pq = self.pq_map[next(index_iter)]
         priority_obj = min_pq.peek()
-        if priority_obj is None:
-            min_score = sys.maxsize
-        else:
-            min_score = priority_obj.num_neighbors
+        min_score = sys.maxsize if priority_obj is None else priority_obj.num_neighbors
 
         for element in index_iter:
             next_pq = self.pq_map[element]
-            if next_pq is not None:
-                if len(next_pq):
-                    score = next_pq.peek().num_neighbors
-                    if score < min_score:
-                        min_score = score
-                        min_pq = self.pq_map[element]
+            if next_pq is not None and len(next_pq):
+                score = next_pq.peek().num_neighbors
+                if score < min_score:
+                    min_score = score
+                    min_pq = self.pq_map[element]
 
         return min_pq.peek()
 
-    def remove_object(self, priority_obj):
-        self.pq_map[priority_obj.to_position].remove_object(priority_obj)
+    def remove(self, priority_obj):
+        self.pq_map[priority_obj.to_position].remove(priority_obj)
 
     def remove_motif_node(self, motif_node, i):
         self.pq_map[i].remove_motif_node(motif_node)
-

@@ -16,6 +16,7 @@
 
 # Software available at https://github.com/sandialabs/ISMAGS
 # (POC) Mark DeBonis (mjdebon@sandia.gov)
+from __future__ import annotations
 
 import logging
 import math
@@ -30,8 +31,8 @@ class Motif:
     Attributes:
         number_of_motif_nodes (int): Number of nodes in a given motif.
         links (list[list[MotifLink()]]): The links that the motif is comprised of.
-        initial_connections (dict): Initial unoptimized connections between nodes in the motif.
-        final_connections (list[list]): Final unoptimized connections between nodes in the motif.
+        initial_connections (dict): Initial un-optimized connections between nodes in the motif.
+        final_connections (list[list]): Final un-optimized connections between nodes in the motif.
 
     Methods:
         add_motif_link(start_node, end_node, link_type): Add a motif link between two nodes.
@@ -46,7 +47,7 @@ class Motif:
             number_of_motif_nodes (int): Number of nodes in a given motif. Defaults to 0.
         """
         self.number_of_motif_nodes = number_of_motif_nodes
-        self.links = [self.__init_links(self.number_of_motif_nodes) for _ in range(self.number_of_motif_nodes)]
+        self.links = [self._init_links(self.number_of_motif_nodes) for _ in range(self.number_of_motif_nodes)]
         self.initial_connections = {}
         self.final_connections = None
 
@@ -57,7 +58,7 @@ class Motif:
     def __str__(self):
         return self.description
 
-    def __init_links(self, count):
+    def _init_links(self, count):
         return [None for _ in range(count)]
 
     def add_motif_link(self, start_node, end_node, link_type):
@@ -83,10 +84,8 @@ class Motif:
         self.link_types.add(link_type.link_type_id)
 
     def finalize_motif(self):
-        """Finalizes motif construction by optimizing internal data structures for
-            further use in the algorithm
-        """
-        self.final_connections = [list() for _ in range(self.number_of_motif_nodes)]
+        """Finalizes motif construction by optimizing internal data structures for further use in the algorithm."""
+        self.final_connections = [[] for _ in range(self.number_of_motif_nodes)]
         for i in range(self.number_of_motif_nodes):
             arr = self.initial_connections[i]
             self.final_connections[i] = [0 for _ in arr]
@@ -97,9 +96,9 @@ class Motif:
             self.links[i] = final_links
         self.initial_connections = None
 
+
 def create_motif(motif_description, link_type_translation):
-    """Given a motif description and link type translation value
-        generate a motif object to find in the graph.
+    """Given a motif description and link type translation value generate a motif object to find in the graph.
 
     Args:
         motif_description (str): String description of the motif. For example, "AA00AA".
@@ -115,7 +114,7 @@ def create_motif(motif_description, link_type_translation):
     motif_length = len(motif_description)
     number_of_nodes = int(math.ceil(math.sqrt(2 * motif_length)))
     if motif_length != number_of_nodes * (number_of_nodes - 1) / 2:
-        raise ValueError(f'Motif description `{motif_description}` has invalid length!')
+        raise ValueError(f"Motif description `{motif_description}` has invalid length!")
     counter = 0
     motif = Motif(number_of_motif_nodes=number_of_nodes)
     motif.description = motif_description
@@ -124,7 +123,7 @@ def create_motif(motif_description, link_type_translation):
         for j in range(i):
             character = motif_description[counter]
             counter += 1
-            if character == '0':
+            if character == "0":
                 continue
             link_type = link_type_translation[character]
             if character.isupper():
@@ -135,6 +134,7 @@ def create_motif(motif_description, link_type_translation):
     motif.finalize_motif()
     return motif
 
+
 def write_motifs(motifs, output):
     """Write instances of the motif found in a given network(s) to a specified file.
 
@@ -142,7 +142,7 @@ def write_motifs(motifs, output):
         motifs (set): Motif instances to write to a file.
         output (str): File to write motif instances to.
     """
-    logger.info(f'Writing motif instances to `{output}`')
-    with open(output, 'w') as f:
+    logger.info("Writing motif instances to `%s`", output)
+    with open(output, "w") as f:
         for motif in motifs:
-            f.write(f"{str(motif)}\n")
+            f.write(f"{motif!s}\n")

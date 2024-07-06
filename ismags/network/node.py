@@ -16,8 +16,10 @@
 
 # Software available at https://github.com/sandialabs/ISMAGS
 # (POC) Mark DeBonis (mjdebon@sandia.gov)
+from __future__ import annotations
 
-from motifs.motif_link import MotifLink
+from ismags.motifs.motif_link import MotifLink
+
 
 class Node:
     """Class representing a node in graph.
@@ -33,7 +35,7 @@ class Node:
     NEXT_AVAILABLE_ID = 0
 
     def __init__(self, used=False, description=""):
-        """Initalize a node in graph
+        """Initialize a node in graph.
 
         Keyword Args:
             used (bool): Weather or not the node has been used. Defaults to False.
@@ -45,9 +47,9 @@ class Node:
         self.description = description
 
         self.number_of_motif_link_types = MotifLink.NUMBER_OF_LINK_IDS
-        self.neighbours_per_type = []
+        self.neighbors_per_type = []
         for _ in range(self.number_of_motif_link_types):
-            self.neighbours_per_type.append([])
+            self.neighbors_per_type.append([])
 
     def __str__(self):
         return self.description
@@ -66,11 +68,11 @@ class Node:
         """
         if isinstance(self, node.__class__):
             return self.id < node.id
-        else:
-            raise TypeError
+
+        raise TypeError
 
     def __sub__(self, node):
-        """Calculate the difference between node IDs
+        """Calculate the difference between node IDs.
 
         Args:
             node (Node): Node to compare against.
@@ -83,5 +85,5 @@ class Node:
         """
         if isinstance(self, node.__class__):
             return self.id - node.id
-        else:
-            raise TypeError
+
+        raise TypeError
