@@ -126,7 +126,7 @@ class MotifFinder:
             self.used_links = set()
 
         self._map_next(motif, instances, best_motif_node, mapped_nodes, save_links, number_of_mapped=0)
-        logger.info("Completed motif search in %s:.6f seconds", time.perf_counter() - timer)
+        logger.info("Completed motif search in %s seconds", round(time.perf_counter() - timer, 6))
         logger.info("Found %s instances of %s motif", len(instances), motif.description)
         return instances
 

@@ -167,3 +167,4 @@ cython_debug/
 # Misc.
 *sandbox*
 *scratchpad*
+*graph*.out

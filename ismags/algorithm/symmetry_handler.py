@@ -138,7 +138,7 @@ class SymmetryHandler:
             if self.mapped_nodes[connection] is not None:
                 continue
 
-            links = graph_node.neighbours_per_type[motif_link.motif_link_id]
+            links = graph_node.neighbors_per_type[motif_link.motif_link_id]
             if links is None:
                 return False
             self.mapping[connection].add_restriction_list(links, node=graph_node)
