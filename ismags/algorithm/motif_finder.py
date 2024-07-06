@@ -16,19 +16,21 @@
 
 # Software available at https://github.com/sandialabs/ISMAGS
 # (POC) Mark DeBonis (mjdebon@sandia.gov)
+from __future__ import annotations
 
 import logging
 import sys
 import time
 
 from algorithm.symmetry_handler import SymmetryHandler
-from datastructures.node_iterator import NodeIterator
+from data_structures.node_iterator import NodeIterator
 from motifs.motif_instance import MotifInstance
 from motifs.motif_link import MotifLink
 from network.network import Network
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
+
 
 class MotifFinder:
     """Creates a new MotifFinder. This class is responsible
@@ -54,12 +56,11 @@ class MotifFinder:
         """
         logger.info("Initializing ISMAGS MotifFinder...")
         self.network = network
-        self.symmetry_handler = None # No need to init symmetry_handler ahead of time
+        self.symmetry_handler = None  # No need to init symmetry_handler ahead of time
         self.unmapped_nodes = set()
-        self.used_links = set() # set(set(Node))
-        
-        self.cancelled = False
+        self.used_links = set()  # set(set(Node))
 
+        self.cancelled = False
 
     def find_motif(self, motif, save_links=False):
         """Finds and returns all instances of specified motif in the network.
@@ -73,7 +74,6 @@ class MotifFinder:
         Returns:
             All instances of the given motif within the network.
         """
-
         logger.info("Performing motif search...")
         timer = time.perf_counter()
 
@@ -83,7 +83,7 @@ class MotifFinder:
         number_of_motif_nodes = motif.number_of_motif_nodes
 
         # Determining first motif node to be investigated based on number of
-		# edges in network
+        # edges in network
         mapping = [None for _ in range(number_of_motif_nodes)]
         best_motif_node = -1
         size_of_list_of_best_node = sys.maxsize
@@ -98,7 +98,7 @@ class MotifFinder:
             size_of_smallest_list_node_i = sys.maxsize
 
             # For each outgoing link, add the list of nodes in the network
-			# having that edge type
+            # having that edge type
             for k in range(number_of_connections):
                 link = links_from_i[k]
                 number_of_links[link.motif_link_id] += 1
@@ -109,7 +109,6 @@ class MotifFinder:
 
                     if size_of_smallest_list_node_i > len(nodes_of_type):
                         size_of_smallest_list_node_i = len(nodes_of_type)
-
 
             # First node to be mapped is the node with the smallest candidate sublist
             if size_of_smallest_list_node_i < size_of_list_of_best_node:
@@ -148,7 +147,7 @@ class MotifFinder:
         nodes = self.symmetry_handler.mapping[motif_node].get_node_set()
 
         # if the current node mapping will complete the mapping, export the instances
-        if number_of_mapped == motif.number_of_motif_nodes-1:
+        if number_of_mapped == motif.number_of_motif_nodes - 1:
             if save_links and len(nodes) > 0:
                 for i in range(motif.number_of_motif_nodes):
                     if mapped_nodes[i] == None:
@@ -182,7 +181,7 @@ class MotifFinder:
             self.symmetry_handler.mapped_positions.add(motif_node)
             self.unmapped_nodes.remove(motif_node)
 
-            for node in node_iterator: # This should function the same as the Java while loop...
+            for node in node_iterator:  # This should function the same as the Java while loop...
                 mapped_nodes[motif_node] = node
                 node.used = True
 
@@ -196,7 +195,14 @@ class MotifFinder:
                     if next_iterator is not None:
                         self.symmetry_handler.mapping[next_iterator.motif_node_id] = next_iterator
                         # Recursively call _map_next
-                        self._map_next(motif, instances, next_iterator.motif_node_id, mapped_nodes, save_links, number_of_mapped=number_of_mapped+1)
+                        self._map_next(
+                            motif,
+                            instances,
+                            next_iterator.motif_node_id,
+                            mapped_nodes,
+                            save_links,
+                            number_of_mapped=number_of_mapped + 1,
+                        )
                         # Backtracking
                         self.symmetry_handler.mapping[next_iterator.motif_node_id] = next_iterator.parent
 

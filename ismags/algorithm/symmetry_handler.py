@@ -16,14 +16,15 @@
 
 # Software available at https://github.com/sandialabs/ISMAGS
 # (POC) Mark DeBonis (mjdebon@sandia.gov)
+from __future__ import annotations
 
 import copy
 import math
 import sys
 
-from datastructures.priority_queue import (PriorityObject, PriorityQueueMap)
-from datastructures.symmetry_graph import SymmetryGraph
-from datastructures.symmetry_properties import SymmetryProperties
+from data_structures.priority_queue import PriorityObject, PriorityQueueMap
+from data_structures.symmetry_graph import SymmetryGraph
+from data_structures.symmetry_properties import SymmetryProperties
 from motifs.motif import Motif
 
 
@@ -136,12 +137,11 @@ class SymmetryHandler:
         Returns:
             True if graph_node is suitable for mapping on the motif node, otherwise False.
         """
-
         # Prior to this step the motif will be initialized on the MotifFinder side of things
         connections = self.motif.final_connections[motif_node]
         restrictions = self.motif.links[motif_node]
 
-        for (connection, motif_link) in zip(connections, restrictions):
+        for connection, motif_link in zip(connections, restrictions, strict=False):
             if self.mapped_nodes[connection] is not None:
                 continue
 
@@ -150,10 +150,14 @@ class SymmetryHandler:
                 return False
             else:
                 self.mapping[connection].add_restriction_list(links, node=graph_node)
-                self.priority_queue_map.add(PriorityObject(start_node=graph_node,
-                                                           from_position=motif_node,
-                                                           to_position=connection,
-                                                           num_neighbors=len(links)))
+                self.priority_queue_map.add(
+                    PriorityObject(
+                        start_node=graph_node,
+                        from_position=motif_node,
+                        to_position=connection,
+                        num_neighbors=len(links),
+                    )
+                )
         return True
 
     def remove_node_mapping(self, motif_node, graph_node):
@@ -181,7 +185,7 @@ class SymmetryHandler:
         orbit_a = orbits[a]
         orbit_b = orbits[b]
         if orbit_a == -1 and orbit_b == -1:
-            self.number_of_orbits+=1
+            self.number_of_orbits += 1
             orbits[a] = self.number_of_orbits
             orbits[b] = self.number_of_orbits
         elif orbit_b == -1:
@@ -203,13 +207,15 @@ class SymmetryHandler:
         """
         number_of_motif_nodes = motif.number_of_motif_nodes
         symmetry_graph = SymmetryGraph(motif=motif)
-        symmetric_properties = SymmetryProperties(number_of_nodes=number_of_motif_nodes, smaller=self.smaller, larger=self.larger)
+        symmetric_properties = SymmetryProperties(
+            number_of_nodes=number_of_motif_nodes, smaller=self.smaller, larger=self.larger
+        )
         orbits = [-1] * number_of_motif_nodes
         self._map_nodes(symmetric_properties, orbits, symmetry_graph)
         return symmetric_properties
 
     def _map_nodes(self, symmetric_properties, orbits, symmetry_graph, main=True):
-        """Recursive motif analysis
+        """Recursive motif analysis.
 
         Args:
             symmetric_properties (SymmetryProperties): Stores all permutations and symmetry-breaking constraints for the motif.
@@ -257,7 +263,9 @@ class SymmetryHandler:
         new_symmetry_graph = copy.deepcopy(symmetry_graph)
 
         # Deal with the initial OPP and the cases for which the OPP has identical subsets
-        if len(top_split) != symmetry_graph.motif.number_of_motif_nodes and all(item in top_split for item in bottom_split):
+        if len(top_split) != symmetry_graph.motif.number_of_motif_nodes and all(
+            item in top_split for item in bottom_split
+        ):
             permutation = [0] * symmetry_graph.motif.number_of_motif_nodes
             identity_permutation = True
             for k in range(len(new_symmetry_graph.color_to_bottom_motif_node)):
@@ -277,7 +285,7 @@ class SymmetryHandler:
                     top_node = top_nodes[0]
                     new_symmetry_graph = new_symmetry_graph.map_node_between_partitions(top_node, bottom_node, j)
                     if len(new_symmetry_graph.color_to_bottom_motif_node) != symmetry_graph.motif.number_of_motif_nodes:
-                        j = -1 # TODO (mjfadem): This is all kinds of wrong from a logic standpoint
+                        j = -1  # TODO (mjfadem): This is all kinds of wrong from a logic standpoint
                         continue
                     else:
                         break
@@ -301,7 +309,7 @@ class SymmetryHandler:
                 continue
             new_symmetry_graph = symmetry_graph.map_node_between_partitions(top, motif_node, split_color)
             # Keep track of couplings and if the first are coupled to themselves
-            new_main = (main and (motif_node == top))
+            new_main = main and (motif_node == top)
             if new_symmetry_graph is not None:
                 self._map_nodes(symmetric_properties, orbits, new_symmetry_graph, main=new_main)
 
